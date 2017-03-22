@@ -1,6 +1,8 @@
 ! This program ains to teach some basic unstrctured code datastructures.
 !
 ! Author: Leonardo Motta Maia
+! Co-Author: André Aguiar
+! Co-Author: Edson Basso
 
 module shared
 
@@ -48,17 +50,48 @@ module shared
 
         ! Hash function #1: Summation of the two values.
         !
-        integer(kind=4) function hash(val_1, val_2)
+        integer(kind=4) function hash_a(val_1, val_2)
 
             implicit none
 
             integer(kind=4) val_1, val_2
 
-            hash = val_1 + val_2
+            hash_a = val_1 + val_2 
 
-        end function hash
+        end function hash_a
 
-        ! Find dunction: Searches for a occurence in a vector.
+        ! Hash function #2: Andre's proposal.
+        !
+        integer(kind=4) function hash_b(val_1, val_2)
+
+            implicit none
+
+            integer(kind=4) val_1, val_2
+            integer(kind=4) x, y, n, t
+
+            ! Order the nodes.
+            if (val_1 < val_2) then
+                x = val_1
+                y = val_2
+            else
+                x = val_2
+                y = val_1
+            end if
+
+            ! Do the hash itself.
+            n = x + y
+
+            if ( mod(n,2) == 0) then
+                t = (n/2) * (n+1)
+            else
+                t = n * ( (n+1) / 2 )
+            end if
+
+            hash_b = t + x
+
+        end function hash_b
+
+        ! Find function: Searches for a occurence in a vector.
         !
         integer(kind=4) function find(val, vector)
 
@@ -160,12 +193,15 @@ end subroutine basic_ds
 
 subroutine hc_faces
 
+    ! Here I use hash table to build the faces of the mesh. The goal here is to 
+    ! build efficiently the mesh datastructure. Let's roll...
+
     use shared
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2
+    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc
     integer(kind=4), allocatable, dimension(:) :: ihash
-    integer(kind=4), allocatable, dimension(:) :: c_vol
+    integer(kind=4), allocatable, dimension(:,:) :: c_vol
 
 
     ! Let's allocate the number of the faces in the mesh (just for QUAD).
@@ -174,32 +210,57 @@ subroutine hc_faces
 
     write(*,'(A,I8)') " + The number of faces in the mesh: ", nfaces
 
-    allocate(ihash(2*nfaces))
+    allocate(ihash(100*nfaces))
     allocate(face(nfaces,4))
-    allocate(c_vol(2*nfaces))
+    allocate(c_vol(100*nfaces,2))
 
     ihash = 0
     face  = 0
     nf    = 0
     c_vol = 0
+    bc    = -1
 
     do ivol = 1, nelem
 
 
-        ! Do the horizontal faces.
+        ! Do the first face of an element.
 
         p1 = inpoel(1,ivol)
         p2 = inpoel(2,ivol)
 
-        idx = hash(p1,p2)
+
+        ! Get the hash index for these two points.
+
+        idx = hash_b(p1,p2)
+
+
+        ! If the hash has an empty position it means that no face using these
+        ! two points was created. Being that the case, we can create it without
+        ! any fear.
 
         if (ihash(idx) == 0) then
 
+
+            ! Increase the number of faces counter.
+
             nf = nf + 1
+
+
+            ! We are now creating a face what means that this hash position is
+            ! no longer availiable.
 
             ihash(idx) = idx
 
-            c_vol(idx) = nf
+
+            ! When we have a colision, these information will be useful for us
+            ! in the colision analysis.
+
+            c_vol(idx,1) = nf
+            c_vol(idx,2) = ivol
+
+
+            ! Hey there ! I'm your face based datastructure that you need to
+            ! graduate.... ;)
 
             face(nf,1) = p1
             face(nf,2) = p2
@@ -208,17 +269,18 @@ subroutine hc_faces
 
         else
 
-            face(c_vol(idx),4) = ivol
+            face(c_vol(idx,1),4) = ivol
 
         end if
 
 
-        ! Do the vertical faces.
+        ! Do the second face of an element.
 
         p1 = inpoel(2,ivol)
         p2 = inpoel(3,ivol)
 
-        idx = hash(p1,p2)
+        idx = hash_b(p1,p2)
+
 
         if (ihash(idx) == 0) then
 
@@ -226,7 +288,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
-            c_vol(idx) = nf
+            c_vol(idx,1) = nf
+            c_vol(idx,2) = ivol
 
             face(nf,1) = p1
             face(nf,2) = p2
@@ -235,17 +298,18 @@ subroutine hc_faces
 
         else
 
-            face(c_vol(idx),4) = ivol
+            face(c_vol(idx,1),4) = ivol
 
         end if
 
 
-        ! Do the vertical faces.
+        ! Do the third face of an element.
 
         p1 = inpoel(3,ivol)
         p2 = inpoel(4,ivol)
 
-        idx = hash(p1,p2)
+        idx = hash_b(p1,p2)
+
 
         if (ihash(idx) == 0) then
 
@@ -253,7 +317,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
-            c_vol(idx) = nf
+            c_vol(idx,1) = nf
+            c_vol(idx,2) = ivol
 
             face(nf,1) = p1
             face(nf,2) = p2
@@ -262,16 +327,17 @@ subroutine hc_faces
 
         else
 
-            face(c_vol(idx),4) = ivol
+            face(c_vol(idx,1),4) = ivol
 
         end if
 
-        ! Do the vertical faces.
+        ! Do the fourth face of an element.
 
         p1 = inpoel(4,ivol)
         p2 = inpoel(1,ivol)
 
-        idx = hash(p1,p2)
+        idx = hash_b(p1,p2)
+
 
         if (ihash(idx) == 0) then
 
@@ -279,7 +345,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
-            c_vol(idx) = nf
+            c_vol(idx,1) = nf
+            c_vol(idx,2) = ivol
 
             face(nf,1) = p1
             face(nf,2) = p2
@@ -288,16 +355,27 @@ subroutine hc_faces
 
         else
 
-            face(c_vol(idx),4) = ivol
+            face(c_vol(idx,1),4) = ivol
 
         end if
 
-   end do
+    end do
 
 
-    ! do idx = 1, nfaces
-        ! write(*,*) idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
-    ! end do
+    ! Now we have to number the ghosts.
 
+    do nf = 1, nfaces
+        if (face(nf,4) < 0) then
+            face(nf,4) = bc
+            bc = bc - 1
+        end if
+    end do
+
+
+    ! Print out to see the results.
+
+    do idx = 1, nfaces
+        write(*,*) idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
+    end do
 
 end subroutine hc_faces
