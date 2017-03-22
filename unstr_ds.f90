@@ -25,10 +25,10 @@ module shared
     ! nghos: Number of boundary faces.
     integer(kind=4) :: nghos
 
-    ! Connectivit matrix inpoel(1:nnode, 1:nelem)
+    ! Connectivit matrix inpoel(1:nnode, 1:nelem).
     real(kind=8), allocatable, dimension(:,:) :: inpoel
 
-    ! Coordinate points coord(1:ndimn, 1:npoin)
+    ! Coordinate points coord(1:ndimn, 1:npoin).
     real(kind=8), allocatable, dimension(:,:) :: coord
 
 
@@ -36,11 +36,18 @@ module shared
     ! FACE-BASED DATA STRUCTURES CREATION
     !
 
-    ! face(face_index,1): vertex number one of the face.
-    ! face(face_incex,2): vertex number two of the face.
-    ! face(face_incex,3): element to the left.
-    ! face(face_incex,4): element to the right.
+    ! Faces vector.
+    ! face(i,1): Vertex number one of the face.
+    ! face(i,2): Vertex number two of the face.
+    ! face(i,3): Element to the left.
+    ! face(i,4): Element to the right.
     integer(kind=4), allocatable, dimension(:,:) :: face
+
+    ! Ghost vector.
+    ! gasp(-i,1): Type of the boundary condition.
+    ! gasp(-i,2): Face that is represented by this ghost.
+    ! gasp(-i,3): Ghost element number.
+    integer(kind=4), allocatable, dimension(:,:) :: gasp
 
     contains
 
@@ -185,6 +192,13 @@ subroutine basic_ds
     end do
 
 
+    ! Allocating and initializing the ghost vector.
+
+    allocate(gasp(nghos,3))
+
+    gasp = 0
+
+
     close(1)
     close(2)
     close(3)
@@ -199,10 +213,13 @@ subroutine hc_faces
     use shared
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc
+    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc, ig
     integer(kind=4), allocatable, dimension(:) :: ihash
     integer(kind=4), allocatable, dimension(:,:) :: c_vol
 
+    integer(kind=4) :: i, bc_type, n1, n2
+
+    integer(kind=4), dimension(3,nghos) :: g_aux
 
     ! Let's allocate the number of the faces in the mesh (just for QUAD).
 
@@ -372,10 +389,59 @@ subroutine hc_faces
     end do
 
 
+    ! Let's now treat the ghosts.
+
+    ! First, read the boundary condition file.
+
+    open(3,file='elemnBonc.dat')
+
+    read(3,*) nghos
+
+    do i = 1, nghos
+
+        read(3,*) bc_type, n1, n2
+
+        g_aux(1,i) = bc_type
+        g_aux(2,i) = n1
+        g_aux(3,i) = n2
+    
+    end do
+
+    close(3)
+
+    ! Now, lets build the gasp vector acording to:
+    ! gasp(-i,1): Type of the boundary condition.
+    ! gasp(-i,2): Face that is represented by this ghost.
+    ! gasp(-i,3): Ghost element number.
+
+    ihash = 0
+
+    do ig = 1, nghos
+        
+        p1 = g_aux(2,ig)
+        p1 = g_aux(3,ig)
+
+        idx = hash_b(p1, p2)
+
+        if( ihash(idx) == 0 ) then
+
+            gasp(ig,1) = g_aux(1,ig)
+            gasp(ig,2) = g_aux(2,ig)
+            gasp(ig,3) = g_aux(3,ig)
+
+        end if 
+
+    end do
+
+
     ! Print out to see the results.
 
     do idx = 1, nfaces
         write(*,*) idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
+    end do
+
+    do ig = 1, nghos
+        write(*,*) gasp(ig,1), gasp(ig,2), gasp(ig,3)
     end do
 
 end subroutine hc_faces
