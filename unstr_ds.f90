@@ -31,22 +31,14 @@ module shared
 
 
     !
-    ! HASH TABLE CREATION
+    ! FACE-BASED DATA STRUCTURES CREATION
     !
-
-    ! Threshold of colisions.
-    integer(kind=4) :: num_colision = 1000
 
     ! face(face_index,1): vertex number one of the face.
     ! face(face_incex,2): vertex number two of the face.
     ! face(face_incex,3): element to the left.
     ! face(face_incex,4): element to the right.
     integer(kind=4), allocatable, dimension(:,:) :: face
-
-    ! Colisions.
-    integer(kind=4), allocatable, dimension(:) :: colision
-
-    integer(kind=4), allocatable, dimension(:) :: hash_vec
 
     contains
 
@@ -173,6 +165,7 @@ subroutine hc_faces
 
     integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2
     integer(kind=4), allocatable, dimension(:) :: ihash
+    integer(kind=4), allocatable, dimension(:) :: c_vol
 
 
     ! Let's allocate the number of the faces in the mesh (just for QUAD).
@@ -183,10 +176,12 @@ subroutine hc_faces
 
     allocate(ihash(2*nfaces))
     allocate(face(nfaces,4))
+    allocate(c_vol(2*nfaces))
 
     ihash = 0
     face  = 0
     nf    = 0
+    c_vol = 0
 
     do ivol = 1, nelem
 
@@ -204,6 +199,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
+            c_vol(idx) = nf
+
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
@@ -211,7 +208,7 @@ subroutine hc_faces
 
         else
 
-            face(nf,4) = ivol
+            face(c_vol(idx),4) = ivol
 
         end if
 
@@ -229,6 +226,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
+            c_vol(idx) = nf
+
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
@@ -236,7 +235,7 @@ subroutine hc_faces
 
         else
 
-            face(nf,4) = ivol
+            face(c_vol(idx),4) = ivol
 
         end if
 
@@ -254,6 +253,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
+            c_vol(idx) = nf
+
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
@@ -261,7 +262,7 @@ subroutine hc_faces
 
         else
 
-            face(nf,4) = ivol
+            face(c_vol(idx),4) = ivol
 
         end if
 
@@ -278,6 +279,8 @@ subroutine hc_faces
 
             ihash(idx) = idx
 
+            c_vol(idx) = nf
+
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
@@ -285,16 +288,16 @@ subroutine hc_faces
 
         else
 
-            face(nf,4) = ivol
+            face(c_vol(idx),4) = ivol
 
         end if
 
    end do
 
 
-    do idx = 1, nfaces
-        write(*,*) face(idx,1),face(idx,2),face(idx,3),face(idx,4)
-    end do
+    ! do idx = 1, nfaces
+        ! write(*,*) idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
+    ! end do
 
 
 end subroutine hc_faces
