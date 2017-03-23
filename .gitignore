@@ -30,3 +30,6 @@
 
 # vim
 *.swp
+
+# Output files.
+debug_ds.dat

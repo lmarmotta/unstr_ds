@@ -43,11 +43,12 @@ module shared
     ! face(i,4): Element to the right.
     integer(kind=4), allocatable, dimension(:,:) :: face
 
-    ! Ghost vector.
-    ! gasp(-i,1): Type of the boundary condition.
-    ! gasp(-i,2): Face that is represented by this ghost.
-    ! gasp(-i,3): Ghost element number.
-    integer(kind=4), allocatable, dimension(:,:) :: gasp
+    ! Ghost vector (Read).
+    integer(kind=4), allocatable, dimension(:,:) :: ghost
+
+    ! Ghost vector (use).
+    integer(kind=4), allocatable, dimension(:,:) :: ighost
+
 
     contains
 
@@ -142,7 +143,7 @@ subroutine basic_ds
     use shared
     implicit none
 
-    integer(kind=4) :: i, elemn, kindof, n1, n2, n3, n4
+    integer(kind=4) :: i, elemn, kindof, n1, n2, n3, n4, bc_t
     integer(kind=4) :: point, x_coord, y_coord
 
 
@@ -162,7 +163,7 @@ subroutine basic_ds
     write(*,'(A,I8)') " + The number of boundary faces in the mesh: ", nghos
 
 
-    ! Now, let's build the connective matrix. (Debug this guy !)
+    ! Now, let's build the connective matrix.
 
     allocate(inpoel(nnode, nelem))
 
@@ -178,7 +179,7 @@ subroutine basic_ds
     end do
 
 
-    ! Now, Let's build the coordinates. (Debug this guy !)
+    ! Now, Let's build the coordinates.
 
     allocate(coord(2,npoin))
 
@@ -192,11 +193,19 @@ subroutine basic_ds
     end do
 
 
-    ! Allocating and initializing the ghost vector.
+    ! Now, Let's read the ghosts.
 
-    allocate(gasp(nghos,3))
+    allocate(ghost(nghos,3))
 
-    gasp = 0
+    do i = 1, nghos
+        
+        read(3,*) bc_t, n1, n2
+
+        ghost(i,1) = bc_t
+        ghost(i,2) = n1
+        ghost(i,3) = n2
+
+    end do
 
 
     close(1)
@@ -213,23 +222,23 @@ subroutine hc_faces
     use shared
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc, ig
+    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc
+    integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2
     integer(kind=4), allocatable, dimension(:) :: ihash
     integer(kind=4), allocatable, dimension(:,:) :: c_vol
 
-    integer(kind=4) :: i, bc_type, n1, n2
-
-    integer(kind=4), dimension(3,nghos) :: g_aux
+    open(4,file="debug_ds.dat")
 
     ! Let's allocate the number of the faces in the mesh (just for QUAD).
 
     nfaces = ((nelem * 4) + nghos) / 2
 
-    write(*,'(A,I8)') " + The number of faces in the mesh: ", nfaces
+    write(*,'(A,I8)') " + The number of faces in the mesh         : ", nfaces
 
     allocate(ihash(100*nfaces))
     allocate(face(nfaces,4))
     allocate(c_vol(100*nfaces,2))
+    allocate(ighost(-nghos:1,4))
 
     ihash = 0
     face  = 0
@@ -286,10 +295,18 @@ subroutine hc_faces
 
         else
 
+            ! If the hash position is not empty, this means that this volume
+            ! shares a face with a volume that we already creat all faces. This
+            ! means that this cell is the right cell... which is pretty cool !
+
             face(c_vol(idx,1),4) = ivol
 
         end if
 
+
+        ! Every time now on, the procedure will be repeated to other face inside
+        ! the volume. If you have more then one type of mesh element, do it for
+        ! the number of faces of the element.
 
         ! Do the second face of an element.
 
@@ -388,60 +405,62 @@ subroutine hc_faces
         end if
     end do
 
-
-    ! Let's now treat the ghosts.
-
-    ! First, read the boundary condition file.
-
-    open(3,file='elemnBonc.dat')
-
-    read(3,*) nghos
-
-    do i = 1, nghos
-
-        read(3,*) bc_type, n1, n2
-
-        g_aux(1,i) = bc_type
-        g_aux(2,i) = n1
-        g_aux(3,i) = n2
     
+    ! Now, to deal with the mesh ghosts, Let's loop through the faces of the
+    ! mesh. Check the boundary faces, and check the nodes that are contained
+    ! inside that element.
+
+    do nf = 1, nfaces
+        do ig = 1, nghos
+
+            is_bc = face(nf,4)
+
+
+            ! If the face I'm in is a boundary face, I have to link the ighost
+            ! vector with the face index.
+
+            if (is_bc < 0) then
+
+                pf1 = face(nf,1)
+                pf2 = face(nf,2)
+
+                pg1 = ghost(ig,2)
+                pg2 = ghost(ig,3)
+
+                if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
+
+                    ighost(-ig,1) = ghost(ig,1)  ! Boundary type.
+                    ighost(-ig,2) = nf           ! Face index.
+                    ighost(-ig,3) = face(nf,1)   ! Face point 1.
+                    ighost(-ig,4) = face(nf,2)   ! Face point 2.
+
+                end if
+
+            end if
+        end do
     end do
 
-    close(3)
 
-    ! Now, lets build the gasp vector acording to:
-    ! gasp(-i,1): Type of the boundary condition.
-    ! gasp(-i,2): Face that is represented by this ghost.
-    ! gasp(-i,3): Ghost element number.
+    ! Print the results to debug file.
 
-    ihash = 0
-
-    do ig = 1, nghos
-        
-        p1 = g_aux(2,ig)
-        p1 = g_aux(3,ig)
-
-        idx = hash_b(p1, p2)
-
-        if( ihash(idx) == 0 ) then
-
-            gasp(ig,1) = g_aux(1,ig)
-            gasp(ig,2) = g_aux(2,ig)
-            gasp(ig,3) = g_aux(3,ig)
-
-        end if 
-
-    end do
-
-
-    ! Print out to see the results.
+    write(4,'(A)') "Writing face vector connectivity."
+    write(4,'(A)') "Face index :: face point #1 :: face point #2 :: CR :: CL "
 
     do idx = 1, nfaces
-        write(*,*) idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
+        write(4,'(5I8)') idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
     end do
 
+    write(4,*) ""
+    write(4,*) "-------------------------------------------"
+    write(4,*) "-------------------------------------------"
+
+    write(4,'(A)') "Writing ghost vector connectivity."
+    write(4,'(A)') "Ghost index :: Boundary Type :: face index :: face point #1 :: face point #2 :: CL"
+
     do ig = 1, nghos
-        write(*,*) gasp(ig,1), gasp(ig,2), gasp(ig,3)
+        write(4,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
     end do
+
+    close(4)
 
 end subroutine hc_faces
