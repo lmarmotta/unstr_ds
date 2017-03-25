@@ -32,4 +32,4 @@
 *.swp
 
 # Output files.
-debug_ds.dat
+debug*

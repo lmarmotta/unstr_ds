@@ -222,12 +222,11 @@ subroutine hc_faces
     use shared
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc
-    integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2
+    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc, n_colision
+    integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
     integer(kind=4), allocatable, dimension(:) :: ihash
     integer(kind=4), allocatable, dimension(:,:) :: c_vol
 
-    open(4,file="debug_ds.dat")
 
     ! Let's allocate the number of the faces in the mesh (just for QUAD).
 
@@ -235,16 +234,81 @@ subroutine hc_faces
 
     write(*,'(A,I8)') " + The number of faces in the mesh         : ", nfaces
 
-    allocate(ihash(100*nfaces))
     allocate(face(nfaces,4))
-    allocate(c_vol(100*nfaces,2))
     allocate(ighost(-nghos:1,4))
 
-    ihash = 0
-    face  = 0
-    nf    = 0
+    face          =  0
+    nf            =  0
+    bc            = -1
+    n_colision    =  0
+    max_hash_size =  0
+
+
+    ! Get the size of the hash main vector.
+
+    do ivol = 1, nelem
+
+
+        ! First face combination.
+
+        p1 = inpoel(1,ivol)
+        p2 = inpoel(2,ivol)
+
+        idx = hash_b(p1,p2)
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+
+        ! Second face combination.
+
+        p1 = inpoel(2,ivol)
+        p2 = inpoel(3,ivol)
+
+        idx = hash_b(p1,p2)
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+
+        ! Third face combination.
+
+        p1 = inpoel(3,ivol)
+        p2 = inpoel(4,ivol)
+
+        idx = hash_b(p1,p2)
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+
+        ! Fourth face combination.
+
+        p1 = inpoel(4,ivol)
+        p2 = inpoel(1,ivol)
+
+        idx = hash_b(p1,p2)
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+    end do
+
+
+    write(*,'(A,I8)') " + The maximun hash size is                : ", max_hash_size
+
+    allocate(c_vol(1:max_hash_size,2))
+    allocate(ihash(1:max_hash_size))
+
     c_vol = 0
-    bc    = -1
+    ihash = 0
+
+
+    ! Now, proceed with the mesh itself.
 
     do ivol = 1, nelem
 
@@ -293,13 +357,17 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else
+        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
 
             ! If the hash position is not empty, this means that this volume
             ! shares a face with a volume that we already creat all faces. This
             ! means that this cell is the right cell... which is pretty cool !
 
             face(c_vol(idx,1),4) = ivol
+
+        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+
+            n_colision = n_colision + 1
 
         end if
 
@@ -330,9 +398,13 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else
+        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
 
             face(c_vol(idx,1),4) = ivol
+
+        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+
+            n_colision = n_colision + 1
 
         end if
 
@@ -359,9 +431,13 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else
+        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
 
             face(c_vol(idx,1),4) = ivol
+
+        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+
+            n_colision = n_colision + 1
 
         end if
 
@@ -387,9 +463,13 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else
+        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
 
             face(c_vol(idx,1),4) = ivol
+
+        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+
+            n_colision = n_colision + 1
 
         end if
 
@@ -441,7 +521,12 @@ subroutine hc_faces
     end do
 
 
+    write(*,'(A,I8)') " + The number of collisions                : ", n_colision
+
+
     ! Print the results to debug file.
+
+    open(4,file="debug_ds.dat")
 
     write(4,'(A)') "Writing face vector connectivity."
     write(4,'(A)') "Face index :: face point #1 :: face point #2 :: CR :: CL "
