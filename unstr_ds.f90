@@ -234,8 +234,10 @@ subroutine hc_faces
 
     write(*,'(A,I8)') " + The number of faces in the mesh         : ", nfaces
 
-    allocate(face(nfaces,4))
-    allocate(ighost(-nghos:1,4))
+    allocate(face(nfaces+1,4))
+    allocate(ighost(nghos,4))
+
+    ighost = 0
 
     face          =  0
     nf            =  0
@@ -357,15 +359,25 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
+        else if (face(c_vol(idx,1),4) == -1) then
 
             ! If the hash position is not empty, this means that this volume
             ! shares a face with a volume that we already creat all faces. This
             ! means that this cell is the right cell... which is pretty cool !
 
-            face(c_vol(idx,1),4) = ivol
+            pf1 = face(nf,1)
+            pf2 = face(nf,2)
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+            pg1 = inpoel(1,ivol)
+            pg2 = inpoel(2,ivol)
+
+            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
+
+                face(c_vol(idx,1),4) = ivol
+
+            end if 
+
+        else if (face(c_vol(idx,1),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -398,11 +410,21 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
+        else if (face(c_vol(idx,1),4) == -1) then
+            
+            pf1 = face(nf,1)
+            pf2 = face(nf,2)
 
-            face(c_vol(idx,1),4) = ivol
+            pg1 = inpoel(1,ivol)
+            pg2 = inpoel(2,ivol)
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
+
+                face(c_vol(idx,1),4) = ivol
+
+            end if 
+
+        else if (face(c_vol(idx,1),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -431,15 +453,26 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
+        else if (face(c_vol(idx,1),4) == -1) then
 
-            face(c_vol(idx,1),4) = ivol
+            pf1 = face(nf,1)
+            pf2 = face(nf,2)
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+            pg1 = inpoel(1,ivol)
+            pg2 = inpoel(2,ivol)
+
+            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
+
+                face(c_vol(idx,1),4) = ivol
+
+            end if 
+
+        else if (face(c_vol(idx,1),4) /= -1) then
 
             n_colision = n_colision + 1
 
         end if
+
 
         ! Do the fourth face of an element.
 
@@ -463,11 +496,21 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) == -1) then 
+        else if (face(c_vol(idx,1),4) == -1) then
 
-            face(c_vol(idx,1),4) = ivol
+            pf1 = face(nf,1)
+            pf2 = face(nf,2)
 
-        else if (ihash(idx) /= 0 .and. face(nf,4) /= -1) then 
+            pg1 = inpoel(1,ivol)
+            pg2 = inpoel(2,ivol)
+
+            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
+
+                face(c_vol(idx,1),4) = ivol
+
+            end if 
+
+        else if (face(c_vol(idx,1),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -490,6 +533,8 @@ subroutine hc_faces
     ! mesh. Check the boundary faces, and check the nodes that are contained
     ! inside that element.
 
+    is_bc = 0
+
     do nf = 1, nfaces
         do ig = 1, nghos
 
@@ -509,10 +554,10 @@ subroutine hc_faces
 
                 if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
 
-                    ighost(-ig,1) = ghost(ig,1)  ! Boundary type.
-                    ighost(-ig,2) = nf           ! Face index.
-                    ighost(-ig,3) = face(nf,1)   ! Face point 1.
-                    ighost(-ig,4) = face(nf,2)   ! Face point 2.
+                    ighost(ig,1) = ghost(ig,1)  ! Boundary type.
+                    ighost(ig,2) = nf           ! Face index.
+                    ighost(ig,3) = face(nf,1)   ! Face point 1.
+                    ighost(ig,4) = face(nf,2)   ! Face point 2.
 
                 end if
 
@@ -543,7 +588,7 @@ subroutine hc_faces
     write(4,'(A)') "Ghost index :: Boundary Type :: face index :: face point #1 :: face point #2 :: CL"
 
     do ig = 1, nghos
-        write(4,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
+        write(4,'(5I8)') ig,ighost(ig,1),ighost(ig,2),ighost(ig,3),ighost(ig,4)
     end do
 
     close(4)
