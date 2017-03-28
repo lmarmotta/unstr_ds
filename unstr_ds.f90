@@ -225,25 +225,19 @@ subroutine hc_faces
     integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc, n_colision
     integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
     integer(kind=4), allocatable, dimension(:) :: ihash
-    integer(kind=4), allocatable, dimension(:,:) :: c_vol
 
 
-    ! Let's allocate the number of the faces in the mesh (just for QUAD).
-
-    nfaces = ((nelem * 4) + nghos) / 2
-
-    write(*,'(A,I8)') " + The number of faces in the mesh         : ", nfaces
-
-    allocate(face(nfaces+1,4))
+    ! This is a dummy allocation for resize later during hashing process.
+    allocate(face(1,4))
     allocate(ighost(nghos,4))
 
     ighost = 0
 
-    face          =  0
     nf            =  0
     bc            = -1
     n_colision    =  0
     max_hash_size =  0
+
 
 
     ! Get the size of the hash main vector.
@@ -303,10 +297,8 @@ subroutine hc_faces
 
     write(*,'(A,I8)') " + The maximun hash size is                : ", max_hash_size
 
-    allocate(c_vol(1:max_hash_size,2))
-    allocate(ihash(1:max_hash_size))
+    allocate(ihash(max_hash_size))
 
-    c_vol = 0
     ihash = 0
 
 
@@ -337,19 +329,14 @@ subroutine hc_faces
 
             nf = nf + 1
 
+            ! Now allocate the face size.
+
+            call realloc_int2D(nf-1,nf,4,4)
 
             ! We are now creating a face what means that this hash position is
             ! no longer availiable.
 
-            ihash(idx) = idx
-
-
-            ! When we have a colision, these information will be useful for us
-            ! in the colision analysis.
-
-            c_vol(idx,1) = nf
-            c_vol(idx,2) = ivol
-
+            ihash(idx) = nf
 
             ! Hey there ! I'm your face based datastructure that you need to
             ! graduate.... ;)
@@ -359,25 +346,11 @@ subroutine hc_faces
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (face(c_vol(idx,1),4) == -1) then
+        else if (face(ihash(idx),4) == -1) then
 
-            ! If the hash position is not empty, this means that this volume
-            ! shares a face with a volume that we already creat all faces. This
-            ! means that this cell is the right cell... which is pretty cool !
+            face(ihash(idx),4) = ivol
 
-            pf1 = face(nf,1)
-            pf2 = face(nf,2)
-
-            pg1 = inpoel(1,ivol)
-            pg2 = inpoel(2,ivol)
-
-            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
-
-                face(c_vol(idx,1),4) = ivol
-
-            end if 
-
-        else if (face(c_vol(idx,1),4) /= -1) then
+        else if (face(ihash(idx),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -395,36 +368,26 @@ subroutine hc_faces
 
         idx = hash_b(p1,p2)
 
-
         if (ihash(idx) == 0) then
 
             nf = nf + 1
 
-            ihash(idx) = idx
+            ! Now allocate the face size.
 
-            c_vol(idx,1) = nf
-            c_vol(idx,2) = ivol
+            call realloc_int2D(nf-1,nf,4,4)
+
+            ihash(idx) = nf
 
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (face(c_vol(idx,1),4) == -1) then
+        else if (face(ihash(idx),4) == -1) then
             
-            pf1 = face(nf,1)
-            pf2 = face(nf,2)
+            face(ihash(idx),4) = ivol
 
-            pg1 = inpoel(1,ivol)
-            pg2 = inpoel(2,ivol)
-
-            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
-
-                face(c_vol(idx,1),4) = ivol
-
-            end if 
-
-        else if (face(c_vol(idx,1),4) /= -1) then
+        else if (face(ihash(idx),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -438,36 +401,26 @@ subroutine hc_faces
 
         idx = hash_b(p1,p2)
 
-
         if (ihash(idx) == 0) then
 
             nf = nf + 1
 
-            ihash(idx) = idx
+            ! Now allocate the face size.
 
-            c_vol(idx,1) = nf
-            c_vol(idx,2) = ivol
+            call realloc_int2D(nf-1,nf,4,4)
+
+            ihash(idx) = nf
 
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (face(c_vol(idx,1),4) == -1) then
+        else if (face(ihash(idx),4) == -1) then
 
-            pf1 = face(nf,1)
-            pf2 = face(nf,2)
+            face(ihash(idx),4) = ivol
 
-            pg1 = inpoel(1,ivol)
-            pg2 = inpoel(2,ivol)
-
-            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
-
-                face(c_vol(idx,1),4) = ivol
-
-            end if 
-
-        else if (face(c_vol(idx,1),4) /= -1) then
+        else if (face(ihash(idx),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -481,36 +434,26 @@ subroutine hc_faces
 
         idx = hash_b(p1,p2)
 
-
         if (ihash(idx) == 0) then
 
             nf = nf + 1
 
-            ihash(idx) = idx
+            ! Now allocate the face size.
 
-            c_vol(idx,1) = nf
-            c_vol(idx,2) = ivol
+            call realloc_int2D(nf-1,nf,4,4)
+
+            ihash(idx) = nf
 
             face(nf,1) = p1
             face(nf,2) = p2
             face(nf,3) = ivol
             face(nf,4) = -1
 
-        else if (face(c_vol(idx,1),4) == -1) then
+        else if (face(ihash(idx),4) == -1) then
 
-            pf1 = face(nf,1)
-            pf2 = face(nf,2)
+            face(ihash(idx),4) = ivol
 
-            pg1 = inpoel(1,ivol)
-            pg2 = inpoel(2,ivol)
-
-            if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
-
-                face(c_vol(idx,1),4) = ivol
-
-            end if 
-
-        else if (face(c_vol(idx,1),4) /= -1) then
+        else if (face(ihash(idx),4) /= -1) then
 
             n_colision = n_colision + 1
 
@@ -518,6 +461,9 @@ subroutine hc_faces
 
     end do
 
+    nfaces = nf
+
+    write(*,'(A,I8)') " + The number of faces in the mesh         : ", nfaces
 
     ! Now we have to number the ghosts.
 
@@ -576,7 +522,7 @@ subroutine hc_faces
     write(4,'(A)') "Writing face vector connectivity."
     write(4,'(A)') "Face index :: face point #1 :: face point #2 :: CR :: CL "
 
-    do idx = 1, nfaces
+    do idx = 1,nfaces
         write(4,'(5I8)') idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
     end do
 
@@ -594,3 +540,44 @@ subroutine hc_faces
     close(4)
 
 end subroutine hc_faces
+
+subroutine realloc_int2D(size_1a,size_1b,size_2a,size_2b)
+
+    use shared
+    implicit none
+
+    ! Input values.
+    ! vec_1(size_1a,size_2a) --> vec_1(size_1b,size_2b) 
+    !
+    ! size_1a: Size of dim1 original vector.
+    ! size_2a: Size of dim2 original vector.
+    ! size_1b: Size of dim2 new vector.
+    ! size_2b: Size of dim2 new vector.
+
+    integer(kind=4) :: size_1a,size_1b,size_2a,size_2b
+
+    integer(kind=4) :: i,j
+    integer(kind=4), allocatable, dimension(:,:) :: new
+
+
+    allocate(new(size_1a,size_2a))
+
+    new = 0
+
+    do i = 1, size_1a
+        do j = 1, size_2a
+            new(i,j) = face(i,j)
+        end do
+    end do
+
+    deallocate(face)
+
+    allocate(face(size_1b,size_2b))
+
+    do i = 1, size_1a
+        do j = 1, size_2a
+            face(i,j) = new(i,j)
+        end do
+    end do
+
+end subroutine realloc_int2D

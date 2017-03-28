@@ -33,7 +33,7 @@ unstr_ds.o: ./unstr_ds.f90
 SRC = ./unstr_ds.f90
 OBJ = unstr_ds.o
 clean: neat
-	-rm -f .cppdefs $(OBJ) *.mod a.out
+	-rm -f .cppdefs $(OBJ) *.mod a.out debug_ds.dat
 neat:
 	-rm -f $(TMPFILES)
 TAGS: $(SRC)
