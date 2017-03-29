@@ -10,6 +10,7 @@ LD = ifort
 
 
 # Fortran compiler flags
+
 #intel fortran compiler debug mode: 
 FFLAGS  = -g -O0 -fpe:0 -warn declarations -warn unused -warn ignore_loc -warn truncated_source -traceback -check all -implicitnone -openmp
 LDFLAGS = -mkl
@@ -28,10 +29,14 @@ LDFLAGS = -mkl
 .DEFAULT:
 	-touch $@
 all: a.out
-unstr_ds.o: ./unstr_ds.f90
-	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./unstr_ds.f90
-SRC = ./unstr_ds.f90
-OBJ = unstr_ds.o
+nlb2d.o: ./nlb2d.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./nlb2d.f90
+preproc.o: ./preproc.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./preproc.f90
+shared.o: ./shared.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./shared.f90
+SRC = ./shared.f90 ./preproc.f90 ./nlb2d.f90
+OBJ = shared.o preproc.o nlb2d.o
 clean: neat
 	-rm -f .cppdefs $(OBJ) *.mod a.out debug_ds.dat
 neat:
