@@ -2,6 +2,10 @@ module shared
 
     implicit none 
 
+    !
+    ! NAMELIST VARIABLES (INPUTS).
+    !
+    integer(kind=4) :: hash_typ
 
     !
     ! BASIC DATASTRUCTURES

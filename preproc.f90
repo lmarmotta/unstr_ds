@@ -1,3 +1,21 @@
+subroutine indat
+
+    use shared
+    implicit none
+
+
+    ! Read namelist parameters declared in the module.
+
+    namelist /PAR_preproc/ hash_typ
+
+    open(1,file='input.in')
+
+    read(1,PAR_preproc)
+
+    close(1)
+
+end subroutine indat
+
 subroutine basic_ds
 
     use shared
@@ -85,6 +103,7 @@ subroutine hc_faces
     integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc, n_colision
     integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
     integer(kind=4), allocatable, dimension(:) :: ihash
+    integer(kind=4), allocatable, dimension(:) :: chash
 
 
     ! This is a dummy allocation for resize later during hashing process.
@@ -99,67 +118,17 @@ subroutine hc_faces
     max_hash_size =  0
 
 
+    ! Get the correct hash size for efficient allocation.
 
-    ! Get the size of the hash main vector.
-
-    do ivol = 1, nelem
-
-
-        ! First face combination.
-
-        p1 = inpoel(1,ivol)
-        p2 = inpoel(2,ivol)
-
-        idx = hash_b(p1,p2)
-
-        if (idx > max_hash_size) then
-            max_hash_size = idx
-        end if
-
-
-        ! Second face combination.
-
-        p1 = inpoel(2,ivol)
-        p2 = inpoel(3,ivol)
-
-        idx = hash_b(p1,p2)
-
-        if (idx > max_hash_size) then
-            max_hash_size = idx
-        end if
-
-
-        ! Third face combination.
-
-        p1 = inpoel(3,ivol)
-        p2 = inpoel(4,ivol)
-
-        idx = hash_b(p1,p2)
-
-        if (idx > max_hash_size) then
-            max_hash_size = idx
-        end if
-
-
-        ! Fourth face combination.
-
-        p1 = inpoel(4,ivol)
-        p2 = inpoel(1,ivol)
-
-        idx = hash_b(p1,p2)
-
-        if (idx > max_hash_size) then
-            max_hash_size = idx
-        end if
-
-    end do
-
+    call hash_size(max_hash_size)
 
     write(*,'(A,I8)') " + The maximun hash size is                : ", max_hash_size
 
     allocate(ihash(max_hash_size))
+    allocate(chash(max_hash_size))
 
     ihash = 0
+    chash = 0
 
 
     ! Now, proceed with the mesh itself.
@@ -175,7 +144,11 @@ subroutine hc_faces
 
         ! Get the hash index for these two points.
 
-        idx = hash_b(p1,p2)
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
 
 
         ! If the hash has an empty position it means that no face using these
@@ -226,7 +199,12 @@ subroutine hc_faces
         p1 = inpoel(2,ivol)
         p2 = inpoel(3,ivol)
 
-        idx = hash_b(p1,p2)
+
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
 
         if (ihash(idx) == 0) then
 
@@ -259,7 +237,11 @@ subroutine hc_faces
         p1 = inpoel(3,ivol)
         p2 = inpoel(4,ivol)
 
-        idx = hash_b(p1,p2)
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
 
         if (ihash(idx) == 0) then
 
@@ -292,7 +274,11 @@ subroutine hc_faces
         p1 = inpoel(4,ivol)
         p2 = inpoel(1,ivol)
 
-        idx = hash_b(p1,p2)
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
 
         if (ihash(idx) == 0) then
 
@@ -399,6 +385,9 @@ subroutine hc_faces
 
     close(4)
 
+    deallocate(ihash)
+    deallocate(chash)
+
 end subroutine hc_faces
 
 subroutine realloc_int2D(size_1a,size_1b,size_2a,size_2b)
@@ -442,3 +431,83 @@ subroutine realloc_int2D(size_1a,size_1b,size_2a,size_2b)
 
 end subroutine realloc_int2D
 
+subroutine hash_size(max_hash_size)
+
+    use shared
+    implicit none
+
+    integer(kind=4) :: max_hash_size
+    integer(kind=4) :: ivol, p1, p2, idx
+
+    ! Get the size of the hash main vector.
+
+    do ivol = 1, nelem
+
+
+        ! First face combination.
+
+        p1 = inpoel(1,ivol)
+        p2 = inpoel(2,ivol)
+
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+
+        ! Second face combination.
+
+        p1 = inpoel(2,ivol)
+        p2 = inpoel(3,ivol)
+
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+
+        ! Third face combination.
+
+        p1 = inpoel(3,ivol)
+        p2 = inpoel(4,ivol)
+
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+
+        ! Fourth face combination.
+
+        p1 = inpoel(4,ivol)
+        p2 = inpoel(1,ivol)
+
+        if (hash_typ == 1) then
+            idx = hash_b(p1,p2)
+        else
+            idx = hash_a(p1,p2)
+        end if
+
+        if (idx > max_hash_size) then
+            max_hash_size = idx
+        end if
+
+    end do
+
+
+end subroutine hash_size

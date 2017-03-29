@@ -9,9 +9,8 @@ program nlb2d
 
 
     ! Pre-Processing.
-
+    call indat
     call basic_ds
-
     call hc_faces
 
 end program nlb2d

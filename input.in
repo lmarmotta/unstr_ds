@@ -1,0 +1,8 @@
+*******************************************************************************
+hash_typ = 1: Andre's hash function (more efficient).
+hash_typ = 2: Simple hash function (colision dealing development).
+*******************************************************************************
+
+&PAR_preproc
+    hash_typ = 1
+/
