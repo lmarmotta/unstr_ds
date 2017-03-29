@@ -187,6 +187,8 @@ subroutine hc_faces
 
             n_colision = n_colision + 1
 
+            chash(ihash(idx)) = nf
+
         end if
 
 
