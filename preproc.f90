@@ -21,7 +21,7 @@ subroutine basic_ds
     use shared
     implicit none
 
-    integer(kind=4) :: i, elemn, kindof, n1, n2, n3, n4, bc_t
+    integer(kind=4) :: i, elemn, kindof, bc_t, n, n1, n2
     integer(kind=4) :: point, x_coord, y_coord
 
 
@@ -45,15 +45,14 @@ subroutine basic_ds
 
     allocate(inpoel(nnode, nelem))
 
+    inpoel = 0
+
     do i = 1, nelem
 
-        read(1,*) elemn, kindof, n1, n2, n3, n4
+        read(1,*) elemn, kindof, (inpoel(n,i),n=1,kindof)
 
-        inpoel(1,elemn) = n1
-        inpoel(2,elemn) = n2
-        inpoel(3,elemn) = n3
-        inpoel(4,elemn) = n4
-    
+        write(*,*) i,inpoel(1,elemn),inpoel(2,elemn),inpoel(3,elemn),inpoel(4,elemn)
+ 
     end do
 
 

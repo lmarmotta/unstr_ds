@@ -24,7 +24,7 @@ module shared
     integer(kind=4) :: nghos
 
     ! Connectivit matrix inpoel(1:nnode, 1:nelem).
-    real(kind=8), allocatable, dimension(:,:) :: inpoel
+    integer(kind=4), allocatable, dimension(:,:) :: inpoel
 
     ! Coordinate points coord(1:ndimn, 1:npoin).
     real(kind=8), allocatable, dimension(:,:) :: coord
