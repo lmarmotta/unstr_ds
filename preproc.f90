@@ -48,11 +48,7 @@ subroutine basic_ds
     inpoel = 0
 
     do i = 1, nelem
-
         read(1,*) elemn, kindof, (inpoel(n,i),n=1,kindof)
-
-        write(*,*) i,inpoel(1,elemn),inpoel(2,elemn),inpoel(3,elemn),inpoel(4,elemn)
- 
     end do
 
 
@@ -70,7 +66,8 @@ subroutine basic_ds
     end do
 
 
-    ! Now, Let's read the ghosts.
+    ! Now, Let's read the ghosts. Note that for our 2D meshes, the boundary cond
+    ! ditions will always have two points.
 
     allocate(ghost(nghos,3))
 
@@ -92,6 +89,8 @@ subroutine basic_ds
 end subroutine basic_ds
 
 subroutine hc_faces
+
+    ! To do: Support for mixed cells needed.
 
     ! Here I use hash table to build the faces of the mesh. The goal here is to 
     ! build efficiently the mesh datastructure. Let's roll...
