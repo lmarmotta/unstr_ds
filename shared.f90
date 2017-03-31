@@ -11,7 +11,7 @@ module shared
     ! BASIC DATASTRUCTURES
     !
 
-    ! nnode: Number of nodes in an element.
+    ! nnode: Max number of nodes in an element.
     integer(kind=4) :: nnode = 4
 
     ! nelem: Number of elements in a mesh.

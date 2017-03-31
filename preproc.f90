@@ -21,7 +21,7 @@ subroutine basic_ds
     use shared
     implicit none
 
-    integer(kind=4) :: i, elemn, kindof, bc_t, n, n1, n2
+    integer(kind=4) :: i, elemn, kindof, bc_t, n1, n2, n3, n4
     integer(kind=4) :: point, x_coord, y_coord
 
 
@@ -41,14 +41,27 @@ subroutine basic_ds
     write(*,'(A,I8)') " + The number of boundary faces in the mesh: ", nghos
 
 
-    ! Now, let's build the connective matrix.
+    ! Now, let's build the connective matrix. Here I am loading the connectivity
+    ! nodes as well as the element type in the same guy. It's not usual but...
+    ! inpoel(1,elem): Element node 1.
+    ! inpoel(2,elem): Element node 2.
+    ! inpoel(3,elem): Element node 3.
+    ! inpoel(4,elem): Element node 4.
+    ! inpoel(5,elem): Element type.
 
-    allocate(inpoel(nnode, nelem))
+    allocate(inpoel(nnode+1, nelem))
 
     inpoel = 0
 
     do i = 1, nelem
-        read(1,*) elemn, kindof, (inpoel(n,i),n=1,kindof)
+        read(1,*) elemn, kindof, n1, n2, n3, n4
+
+        inpoel(1,i) = n1
+        inpoel(2,i) = n2
+        inpoel(3,i) = n3
+        inpoel(4,i) = n4  ! Will be zero if TRI_3 element.
+        inpoel(5,i) = kindof
+
     end do
 
 
@@ -98,8 +111,11 @@ subroutine hc_faces
     use shared
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, p1, p2, bc, n_colision
+    integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i
     integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
+
+    ! Inner element face.
+    integer(kind=4), dimension(4,2) :: ine 
     integer(kind=4), allocatable, dimension(:) :: ihash
     integer(kind=4), allocatable, dimension(:) :: chash
 
@@ -127,181 +143,106 @@ subroutine hc_faces
 
     ihash = 0
     chash = 0
+    ine   = 0
+
+    inf   = 0
 
 
     ! Now, proceed with the mesh itself.
 
     do ivol = 1, nelem
 
+        if (inpoel(5,ivol) == 3) then
 
-        ! Do the first face of an element.
-
-        p1 = inpoel(1,ivol)
-        p2 = inpoel(2,ivol)
-
-
-        ! Get the hash index for these two points.
-
-        if (hash_typ == 1) then
-            idx = hash_b(p1,p2)
-        else
-            idx = hash_a(p1,p2)
-        end if
-
-
-        ! If the hash has an empty position it means that no face using these
-        ! two points was created. Being that the case, we can create it without
-        ! any fear.
-
-        if (ihash(idx) == 0) then
-
-
-            ! Increase the number of faces counter.
-
-            nf = nf + 1
-
-            ! Now allocate the face size.
-
-            call realloc_int2D(nf-1,nf,4,4)
-
-            ! We are now creating a face what means that this hash position is
-            ! no longer availiable.
-
-            ihash(idx) = nf
-
-            ! Hey there ! I'm your face based datastructure that you need to
-            ! graduate.... ;)
-
-            face(nf,1) = p1
-            face(nf,2) = p2
-            face(nf,3) = ivol
-            face(nf,4) = -1
-
-        else if (face(ihash(idx),4) == -1) then
-
-            face(ihash(idx),4) = ivol
-
-        else if (face(ihash(idx),4) /= -1) then
-
-            n_colision = n_colision + 1
-
-        end if
-
-
-        ! Every time now on, the procedure will be repeated to other face inside
-        ! the volume. If you have more then one type of mesh element, do it for
-        ! the number of faces of the element.
-
-        ! Do the second face of an element.
-
-        p1 = inpoel(2,ivol)
-        p2 = inpoel(3,ivol)
-
-
-        if (hash_typ == 1) then
-            idx = hash_b(p1,p2)
-        else
-            idx = hash_a(p1,p2)
-        end if
-
-        if (ihash(idx) == 0) then
-
-            nf = nf + 1
-
-            ! Now allocate the face size.
-
-            call realloc_int2D(nf-1,nf,4,4)
-
-            ihash(idx) = nf
-
-            face(nf,1) = p1
-            face(nf,2) = p2
-            face(nf,3) = ivol
-            face(nf,4) = -1
-
-        else if (face(ihash(idx),4) == -1) then
+            ! TRI_3 internal element.
             
-            face(ihash(idx),4) = ivol
+            inf = 3
 
-        else if (face(ihash(idx),4) /= -1) then
+            ! First face.
+            ine(1,1) = inpoel(1,ivol)
+            ine(1,2) = inpoel(2,ivol)
 
-            n_colision = n_colision + 1
+            ! Second face.
+            ine(2,1) = inpoel(2,ivol)
+            ine(2,2) = inpoel(3,ivol)
 
-        end if
+            ! Third face.
+            ine(3,1) = inpoel(3,ivol)
+            ine(3,2) = inpoel(1,ivol)
 
+        else if (inpoel(5,ivol) == 4) then
 
-        ! Do the third face of an element.
+            ! QUAD_4 internal element.
 
-        p1 = inpoel(3,ivol)
-        p2 = inpoel(4,ivol)
+            inf = 4
 
-        if (hash_typ == 1) then
-            idx = hash_b(p1,p2)
-        else
-            idx = hash_a(p1,p2)
-        end if
+            ! First face.
+            ine(1,1) = inpoel(1,ivol)
+            ine(1,2) = inpoel(2,ivol)
 
-        if (ihash(idx) == 0) then
+            ! Second face.
+            ine(2,1) = inpoel(2,ivol)
+            ine(2,2) = inpoel(3,ivol)
 
-            nf = nf + 1
+            ! Third face.
+            ine(3,1) = inpoel(3,ivol)
+            ine(3,2) = inpoel(4,ivol)
 
-            ! Now allocate the face size.
-
-            call realloc_int2D(nf-1,nf,4,4)
-
-            ihash(idx) = nf
-
-            face(nf,1) = p1
-            face(nf,2) = p2
-            face(nf,3) = ivol
-            face(nf,4) = -1
-
-        else if (face(ihash(idx),4) == -1) then
-
-            face(ihash(idx),4) = ivol
-
-        else if (face(ihash(idx),4) /= -1) then
-
-            n_colision = n_colision + 1
+            ! Fourth face.
+            ine(4,1) = inpoel(4,ivol)
+            ine(4,2) = inpoel(1,ivol)
 
         end if
 
 
-        ! Do the fourth face of an element.
+        ! Loop trough faces of this element and hash then man !
 
-        p1 = inpoel(4,ivol)
-        p2 = inpoel(1,ivol)
+        do i = 1, inf
 
-        if (hash_typ == 1) then
-            idx = hash_b(p1,p2)
-        else
-            idx = hash_a(p1,p2)
-        end if
+            if (hash_typ == 1) then
+                idx = hash_b(ine(i,1),ine(i,2))
+            else
+                idx = hash_a(ine(i,1),ine(i,2))
+            end if
 
-        if (ihash(idx) == 0) then
+            ! If the hash has an empty position it means that no face using these
+            ! two points was created. Being that the case, we can create it without
+            ! any fear.
 
-            nf = nf + 1
+            if (ihash(idx) == 0) then
 
-            ! Now allocate the face size.
+                ! Increase the number of faces counter.
 
-            call realloc_int2D(nf-1,nf,4,4)
+                nf = nf + 1
 
-            ihash(idx) = nf
+                ! Now allocate the face size.
 
-            face(nf,1) = p1
-            face(nf,2) = p2
-            face(nf,3) = ivol
-            face(nf,4) = -1
+                call realloc_int2D(nf-1,nf,4,4)
 
-        else if (face(ihash(idx),4) == -1) then
+                ! We are now creating a face what means that this hash position is
+                ! no longer availiable.
 
-            face(ihash(idx),4) = ivol
+                ihash(idx) = nf
 
-        else if (face(ihash(idx),4) /= -1) then
+                ! Hey there ! I'm your face based datastructure that you need to
+                ! graduate.... ;)
 
-            n_colision = n_colision + 1
+                face(nf,1) = ine(i,1)
+                face(nf,2) = ine(i,2)
+                face(nf,3) = ivol
+                face(nf,4) = -1
 
-        end if
+            else if (face(ihash(idx),4) == -1) then
+
+                face(ihash(idx),4) = ivol
+
+            else if (face(ihash(idx),4) /= -1) then
+
+                n_colision = n_colision + 1
+
+            end if
+
+        end do 
 
     end do
 
