@@ -29,14 +29,16 @@ LDFLAGS = -mkl
 .DEFAULT:
 	-touch $@
 all: a.out
+derived.o: ./derived.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./derived.f90
 nlb2d.o: ./nlb2d.f90 shared.o
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./nlb2d.f90
 preproc.o: ./preproc.f90 shared.o
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./preproc.f90
 shared.o: ./shared.f90
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./shared.f90
-SRC = ./shared.f90 ./preproc.f90 ./nlb2d.f90
-OBJ = shared.o preproc.o nlb2d.o
+SRC = ./shared.f90 ./derived.f90 ./nlb2d.f90 ./preproc.f90
+OBJ = shared.o derived.o nlb2d.o preproc.o
 clean: neat
 	-rm -f .cppdefs $(OBJ) *.mod a.out debug_ds.dat
 neat:
