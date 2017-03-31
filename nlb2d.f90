@@ -2,6 +2,15 @@
 ! Author: Leonardo Motta
 ! Contributions: Edson, Andre.
 
+! To do: [ ] -  Put the vector allocations in indat.
+        ![ ] -  Perform the area calculation.
+        ![ ] -  Find the face inverse.
+        ![ ] -  Write formal face data for restart.
+        ![ ] -  do a restar procedure.
+        ![ ] -  Put some properties in namelist.
+        ![ ] -  Put some properties in init 
+        ![ ] -  Allocate stuff in init.
+
 program nlb2d
 
     use shared
@@ -28,7 +37,7 @@ program nlb2d
 
     write(*,'(A)') ""
     write(*,'(A)') "-----------------------------------------------------------"
-    write(*,'(A)') " + PERFORMING PRE-PROCESSING OF THE MESH."
+    write(*,'(A)') " + PERFORMING PRE-PROCESSING."
     
     call system_clock(c1)
 

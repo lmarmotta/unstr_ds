@@ -109,6 +109,7 @@ subroutine hc_faces
     ! build efficiently the mesh datastructure. Let's roll...
 
     use shared
+    use functions
     implicit none
 
     integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i
@@ -122,7 +123,7 @@ subroutine hc_faces
 
     ! This is a dummy allocation for resize later during hashing process.
     allocate(face(1,4))
-    allocate(ighost(nghos,4))
+    allocate(ighost(-nghos:-1,4))
 
     ighost = 0
 
@@ -285,10 +286,10 @@ subroutine hc_faces
 
                 if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
 
-                    ighost(ig,1) = ghost(ig,1)  ! Boundary type.
-                    ighost(ig,2) = nf           ! Face index.
-                    ighost(ig,3) = face(nf,1)   ! Face point 1.
-                    ighost(ig,4) = face(nf,2)   ! Face point 2.
+                    ighost(-ig,1) = ghost(ig,1)  ! Boundary type.
+                    ighost(-ig,2) = nf           ! Face index.
+                    ighost(-ig,3) = face(nf,1)   ! Face point 1.
+                    ighost(-ig,4) = face(nf,2)   ! Face point 2.
 
                 end if
 
@@ -319,7 +320,7 @@ subroutine hc_faces
     write(4,'(A)') "Ghost index :: Boundary Type :: face index :: face point #1 :: face point #2 :: CL"
 
     do ig = 1, nghos
-        write(4,'(5I8)') ig,ighost(ig,1),ighost(ig,2),ighost(ig,3),ighost(ig,4)
+        write(4,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
     end do
 
     close(4)
@@ -373,6 +374,7 @@ end subroutine realloc_int2D
 subroutine hash_size(max_hash_size)
 
     use shared
+    use functions
     implicit none
 
     integer(kind=4) :: max_hash_size
