@@ -22,7 +22,7 @@ program nlb2d
 
     write(*,'(A)') ""
     write(*,'(A)') "-----------------------------------------------------------"
-    write(*,'(A)') "  ++ New Leo's 2D Solver - Euler Unstructured Code ++      "
+    write(*,'(A)') "              ++ Euler Unstructured Code ++                "
     write(*,'(A)') "-----------------------------------------------------------"
 
     ! ----------- Time ------------- 

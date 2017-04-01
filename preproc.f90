@@ -112,7 +112,7 @@ subroutine hc_faces
     use functions
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i,search
+    integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i,infi
     integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
 
     ! Inner element face.
@@ -129,6 +129,7 @@ subroutine hc_faces
     bc            = -1
     n_colision    =  0
     max_hash_size =  0
+    infi          =  0
 
 
     ! Get the correct hash size for efficient allocation.
@@ -232,30 +233,30 @@ subroutine hc_faces
 
                 face(ihash(idx),4) = ivol
 
-            else if (face(ihash(idx),4) /= -1) then
+            else if (ihash(idx) /= 0 .and. face(ihash(idx),4) /= -1) then
+
+                ! Colision on the hash table !
 
                 n_colision = n_colision + 1
 
                 ! Here I'am dealing with colisions using linear probing. Fairly 
                 ! simpler and less memory hungry than linked lists.
 
-                search = 0
-
                 ! Loop through the hash table to find empty spots.
 
-                do while (ihash(idx) /= 0 .or. idx <= 0)
+                ! do while (ihash(idx) /= 0 .and. infi == 0)
+                do while (ihash(idx) /= 0 .and. infi == 0)
 
-                    if (idx >= max_hash_size + hs) then
-                        write(*,*) "  + HASH ERROR: Increase 'hs' parameter"
-                        stop
+                    if (idx == max_hash_size + hs) then
+                        idx = 1
+                        infi = 1
                     end if
 
                     idx = idx + 1
-                    search = search + 1
 
                 end do 
 
-                ! From now on, deal with the faces in the same way.
+                ! Increase the number of faces counter.
 
                 nf = nf + 1
 
@@ -263,7 +264,13 @@ subroutine hc_faces
 
                 call realloc_int2D_faces(nf-1,nf,4,4)
 
+                ! We are now creating a face what means that this hash position is
+                ! no longer availiable.
+
                 ihash(idx) = nf
+
+                ! Hey there ! I'm your face based datastructure that you need to
+                ! graduate.... ;)
 
                 face(nf,1) = ine(i,1)
                 face(nf,2) = ine(i,2)
@@ -342,6 +349,15 @@ subroutine hc_faces
     do ig = 1, nghos
         write(5,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
     end do
+
+
+    ! Forget the colisions for a while.
+
+    if (n_colision /= 0) then
+        write(*,*) ""
+        write(*,*) "HASH ERROR: Colision management not fully validated."
+        stop
+    end if
 
     close(4)
     close(5)
