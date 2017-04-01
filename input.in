@@ -1,8 +1,14 @@
 *******************************************************************************
 hash_typ = 1: Andre's hash function (more efficient).
 hash_typ = 2: Simple hash function (colision dealing development).
+restart = 0 : Brand new solution.
+restart = 1 : Restart.
+
+hs          : Number of safety spots for collision managment.
 *******************************************************************************
 
 &PAR_preproc
+    hs = 100
     hash_typ = 1
+    restart = 0
 /

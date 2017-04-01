@@ -6,7 +6,7 @@ subroutine indat
 
     ! Read namelist parameters declared in the module.
 
-    namelist /PAR_preproc/ hash_typ
+    namelist /PAR_preproc/ hash_typ, hs, restart
 
     open(1,file='input.in')
 
@@ -112,13 +112,11 @@ subroutine hc_faces
     use functions
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i
+    integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i,search
     integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
 
     ! Inner element face.
     integer(kind=4), dimension(4,2) :: ine 
-    integer(kind=4), allocatable, dimension(:) :: ihash
-    integer(kind=4), allocatable, dimension(:) :: chash
 
 
     ! This is a dummy allocation for resize later during hashing process.
@@ -137,15 +135,12 @@ subroutine hc_faces
 
     call hash_size(max_hash_size)
 
-    write(*,'(A,I8)') " + The maximun hash size is                : ", max_hash_size
+    write(*,'(A,I8)') " + The maximun hash size is                : ", max_hash_size + hs
 
-    allocate(ihash(max_hash_size))
-    allocate(chash(max_hash_size))
+    allocate(ihash(max_hash_size + hs))
 
     ihash = 0
-    chash = 0
     ine   = 0
-
     inf   = 0
 
 
@@ -218,7 +213,7 @@ subroutine hc_faces
 
                 ! Now allocate the face size.
 
-                call realloc_int2D(nf-1,nf,4,4)
+                call realloc_int2D_faces(nf-1,nf,4,4)
 
                 ! We are now creating a face what means that this hash position is
                 ! no longer availiable.
@@ -240,6 +235,40 @@ subroutine hc_faces
             else if (face(ihash(idx),4) /= -1) then
 
                 n_colision = n_colision + 1
+
+                ! Here I'am dealing with colisions using linear probing. Fairly 
+                ! simpler and less memory hungry than linked lists.
+
+                search = 0
+
+                ! Loop through the hash table to find empty spots.
+
+                do while (ihash(idx) /= 0 .or. idx <= 0)
+
+                    if (idx >= max_hash_size + hs) then
+                        write(*,*) "  + HASH ERROR: Increase 'hs' parameter"
+                        stop
+                    end if
+
+                    idx = idx + 1
+                    search = search + 1
+
+                end do 
+
+                ! From now on, deal with the faces in the same way.
+
+                nf = nf + 1
+
+                ! Now allocate the face size.
+
+                call realloc_int2D_faces(nf-1,nf,4,4)
+
+                ihash(idx) = nf
+
+                face(nf,1) = ine(i,1)
+                face(nf,2) = ine(i,2)
+                face(nf,3) = ivol
+                face(nf,4) = -1
 
             end if
 
@@ -301,36 +330,27 @@ subroutine hc_faces
     write(*,'(A,I8)') " + The number of collisions                : ", n_colision
 
 
-    ! Print the results to debug file.
+    ! Print data for restart.
 
-    open(4,file="debug_ds.dat")
-
-    write(4,'(A)') "Writing face vector connectivity."
-    write(4,'(A)') "Face index :: face point #1 :: face point #2 :: CR :: CL "
+    open(4,file="face.dat")
+    open(5,file="ighost.dat")
 
     do idx = 1,nfaces
         write(4,'(5I8)') idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
     end do
 
-    write(4,*) ""
-    write(4,*) "-------------------------------------------"
-    write(4,*) "-------------------------------------------"
-
-    write(4,'(A)') "Writing ghost vector connectivity."
-    write(4,'(A)') "Ghost index :: Boundary Type :: face index :: face point #1 :: face point #2 :: CL"
-
     do ig = 1, nghos
-        write(4,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
+        write(5,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
     end do
 
     close(4)
+    close(5)
 
     deallocate(ihash)
-    deallocate(chash)
 
 end subroutine hc_faces
 
-subroutine realloc_int2D(size_1a,size_1b,size_2a,size_2b)
+subroutine realloc_int2D_faces(size_1a,size_1b,size_2a,size_2b)
 
     use shared
     implicit none
@@ -369,7 +389,42 @@ subroutine realloc_int2D(size_1a,size_1b,size_2a,size_2b)
         end do
     end do
 
-end subroutine realloc_int2D
+end subroutine  realloc_int2D_faces
+
+subroutine realloc_int1D_ihash(size_1,size_2)
+
+    use shared
+    implicit none
+
+    ! Input values.
+    ! vec_1(size_1a,size_2a) --> vec_1(size_1b,size_2b) 
+    !
+    ! size_1: Size of dim1 original vector.
+    ! size_2: Size of dim2 original vector.
+
+    integer(kind=4) :: size_1, size_2
+
+    integer(kind=4) :: i
+    integer(kind=4), allocatable, dimension(:) :: new
+
+
+    allocate(new(size_1))
+
+    new = 0
+
+    do i = 1, size_1
+        new(i) = ihash(i)
+    end do
+
+    deallocate(ihash)
+
+    allocate(ihash(size_2))
+
+    do i = 1, size_1
+        ihash(i) = new(i)
+    end do
+
+end subroutine  realloc_int1D_ihash
 
 subroutine hash_size(max_hash_size)
 

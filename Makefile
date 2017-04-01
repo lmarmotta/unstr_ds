@@ -42,7 +42,7 @@ shared.o: ./shared.f90
 SRC = ./derived.f90 ./shared.f90 ./nlb2d.f90 ./functions.f90 ./preproc.f90
 OBJ = derived.o shared.o nlb2d.o functions.o preproc.o
 clean: neat
-	-rm -f .cppdefs $(OBJ) *.mod a.out debug_ds.dat
+	-rm -f .cppdefs $(OBJ) *.mod a.out face.dat ighost.dat
 neat:
 	-rm -f $(TMPFILES)
 TAGS: $(SRC)

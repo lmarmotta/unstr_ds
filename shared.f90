@@ -5,7 +5,7 @@ module shared
     !
     ! NAMELIST VARIABLES (INPUTS).
     !
-    integer(kind=4) :: hash_typ
+    integer(kind=4) :: hash_typ, hs, restart
 
     !
     ! BASIC DATASTRUCTURES
@@ -28,6 +28,9 @@ module shared
 
     ! Coordinate points coord(1:ndimn, 1:npoin).
     real(kind=8), allocatable, dimension(:,:) :: coord
+
+    ! Hash table. It will be missed after preproc.
+    integer(kind=4), allocatable, dimension(:) :: ihash
 
 
     !
