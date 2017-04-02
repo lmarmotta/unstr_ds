@@ -9,6 +9,6 @@ hs          : Number of safety spots for collision managment.
 
 &PAR_preproc
     hs = 0
-    hash_typ = 2
+    hash_typ = 1
     restart = 0
 /

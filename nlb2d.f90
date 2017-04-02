@@ -5,11 +5,8 @@
 ! To do: [ ] -  Put the vector allocations in indat.
         ![ ] -  Perform the area calculation.
         ![ ] -  Find the face inverse.
-        ![ ] -  Write formal face data for restart.
         ![ ] -  do a restar procedure.
-        ![ ] -  Put some properties in namelist.
         ![ ] -  Put some properties in init 
-        ![ ] -  Allocate stuff in init.
 
 program nlb2d
 
@@ -82,6 +79,31 @@ program nlb2d
     write(*,'(A,F10.6,A)') " + Elapse time: ", elapse_time, " [s]"
     write(*,'(A)') "-----------------------------------------------------------"
 
+    !
+    ! OUTPUT DATA.
+    !
+
+    ! ----------- Time ------------- 
+    call system_clock(count_rate=cr)
+    rate = real(cr)
+    elapse_time = 0.0d0
+    ! ------------------------------
+
+    write(*,'(A)') ""
+    write(*,'(A)') "-----------------------------------------------------------"
+    write(*,'(A)') " + OUTPUTING SOLUTION TO TECPLOT."
+
+    call system_clock(c1)
+
+    call tecplot
+
+    call system_clock(c2)
+
+    elapse_time = real(c2-c1,kind=8)/rate
+
+    write(*,*) ""
+    write(*,'(A,F10.6,A)') " + Elapse time: ", elapse_time, " [s]"
+    write(*,'(A)') "-----------------------------------------------------------"
 
 end program nlb2d
 

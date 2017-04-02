@@ -39,10 +39,12 @@ preproc.o: ./preproc.f90 shared.o functions.o
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./preproc.f90
 shared.o: ./shared.f90
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./shared.f90
-SRC = ./derived.f90 ./shared.f90 ./nlb2d.f90 ./functions.f90 ./preproc.f90
-OBJ = derived.o shared.o nlb2d.o functions.o preproc.o
+tecplot.o: ./tecplot.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./tecplot.f90
+SRC = ./nlb2d.f90 ./functions.f90 ./shared.f90 ./derived.f90 ./preproc.f90 ./tecplot.f90
+OBJ = nlb2d.o functions.o shared.o derived.o preproc.o tecplot.o
 clean: neat
-	-rm -f .cppdefs $(OBJ) *.mod a.out face.dat ighost.dat
+	-rm -f .cppdefs $(OBJ) *.mod a.out face.dat ighost.dat output.dat
 neat:
 	-rm -f $(TMPFILES)
 TAGS: $(SRC)

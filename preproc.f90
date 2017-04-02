@@ -22,7 +22,8 @@ subroutine basic_ds
     implicit none
 
     integer(kind=4) :: i, elemn, kindof, bc_t, n1, n2, n3, n4
-    integer(kind=4) :: point, x_coord, y_coord
+    integer(kind=4) :: point
+    real(kind=8) :: x_coord, y_coord
 
 
     ! At first let's get our mesh size.
@@ -521,5 +522,13 @@ subroutine hash_size(max_hash_size)
 
     end do
 
-
 end subroutine hash_size
+
+subroutine restart
+
+    use shared
+    implicit none
+
+
+end subroutine restart
+
