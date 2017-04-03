@@ -7,10 +7,14 @@ subroutine indat
     ! Read namelist parameters declared in the module.
 
     namelist /PAR_preproc/ hash_typ, hs, restart
+    namelist /PAR_formulation/ formulation
+    namelist /PAR_boundary/ rho, rhou, rhov, e
 
     open(1,file='input.in')
 
     read(1,PAR_preproc)
+    read(1,PAR_formulation)
+    read(1,PAR_boundary)
 
     close(1)
 
@@ -32,29 +36,28 @@ subroutine basic_ds
     open(2,file='pointCord.dat')
     open(3,file='elemnBonc.dat')
 
-    read(1,*) nelem
+    read(1,*) ncells
     read(2,*) npoin
     read(3,*) nghos
 
-    write(*,*)
-    write(*,'(A,I8)') " + The number of elements in the mesh is   : ", nelem
+    write(*,'(A,I8)') " + The number of elements in the mesh is   : ", ncells
     write(*,'(A,I8)') " + The number of points in the mesh is     : ", npoin
     write(*,'(A,I8)') " + The number of boundary faces in the mesh: ", nghos
 
 
     ! Now, let's build the connective matrix. Here I am loading the connectivity
     ! nodes as well as the element type in the same guy. It's not usual but...
-    ! inpoel(1,elem): Element node 1.
-    ! inpoel(2,elem): Element node 2.
-    ! inpoel(3,elem): Element node 3.
-    ! inpoel(4,elem): Element node 4.
-    ! inpoel(5,elem): Element type.
+    ! inpoel(1,cell): cell node 1.
+    ! inpoel(2,cell): cell node 2.
+    ! inpoel(3,cell): cell node 3.
+    ! inpoel(4,cell): cell node 4.
+    ! inpoel(5,cell): cell type.
 
-    allocate(inpoel(nnode+1, nelem))
+    allocate(inpoel(max_nnode_pcell+1, ncells))
 
     inpoel = 0
 
-    do i = 1, nelem
+    do i = 1, ncells 
         read(1,*) elemn, kindof, n1, n2, n3, n4
 
         inpoel(1,i) = n1
@@ -83,15 +86,15 @@ subroutine basic_ds
     ! Now, Let's read the ghosts. Note that for our 2D meshes, the boundary cond
     ! ditions will always have two points.
 
-    allocate(ghost(nghos,3))
+    allocate(ghost(3,nghos))
 
     do i = 1, nghos
         
         read(3,*) bc_t, n1, n2
 
-        ghost(i,1) = bc_t
-        ghost(i,2) = n1
-        ghost(i,3) = n2
+        ghost(1,i) = bc_t
+        ghost(2,i) = n1
+        ghost(3,i) = n2
 
     end do
 
@@ -104,10 +107,10 @@ end subroutine basic_ds
 
 subroutine hc_faces
 
-    ! To do: Support for mixed cells needed.
-
     ! Here I use hash table to build the faces of the mesh. The goal here is to 
     ! build efficiently the mesh datastructure. Let's roll...
+
+    ! To do: Finish colision management.
 
     use shared
     use functions
@@ -121,8 +124,8 @@ subroutine hc_faces
 
 
     ! This is a dummy allocation for resize later during hashing process.
-    allocate(face(1,4))
-    allocate(ighost(-nghos:-1,4))
+    allocate(face(4,1))
+    allocate(ighost(4,-nghos:-1))
 
     ighost = 0
 
@@ -148,7 +151,7 @@ subroutine hc_faces
 
     ! Now, proceed with the mesh itself.
 
-    do ivol = 1, nelem
+    do ivol = 1, ncells
 
         if (inpoel(5,ivol) == 3) then
 
@@ -214,7 +217,7 @@ subroutine hc_faces
 
                 ! Now allocate the face size.
 
-                call realloc_int2D_faces(nf-1,nf,4,4)
+                call realloc_int2D_faces(4,4,nf-1,nf)
 
                 ! We are now creating a face what means that this hash position is
                 ! no longer availiable.
@@ -224,16 +227,16 @@ subroutine hc_faces
                 ! Hey there ! I'm your face based datastructure that you need to
                 ! graduate.... ;)
 
-                face(nf,1) = ine(i,1)
-                face(nf,2) = ine(i,2)
-                face(nf,3) = ivol
-                face(nf,4) = -1
+                face(1,nf) = ine(i,1)
+                face(2,nf) = ine(i,2)
+                face(3,nf) = ivol
+                face(4,nf) = -1
 
-            else if (face(ihash(idx),4) == -1) then
+            else if (face(4,ihash(idx)) == -1) then
 
-                face(ihash(idx),4) = ivol
+                face(4,ihash(idx)) = ivol
 
-            else if (ihash(idx) /= 0 .and. face(ihash(idx),4) /= -1) then
+            else if (ihash(idx) /= 0 .and. face(4,ihash(idx)) /= -1) then
 
                 ! Colision on the hash table !
 
@@ -258,7 +261,7 @@ subroutine hc_faces
 
                 ! Now allocate the face size.
 
-                call realloc_int2D_faces(nf-1,nf,4,4)
+                call realloc_int2D_faces(4,4,nf-1,nf)
 
                 ! We are now creating a face what means that this hash position is
                 ! no longer availiable.
@@ -268,10 +271,10 @@ subroutine hc_faces
                 ! Hey there ! I'm your face based datastructure that you need to
                 ! graduate.... ;)
 
-                face(nf,1) = ine(i,1)
-                face(nf,2) = ine(i,2)
-                face(nf,3) = ivol
-                face(nf,4) = -1
+                face(1,nf) = ine(i,1)
+                face(2,nf) = ine(i,2)
+                face(3,nf) = ivol
+                face(4,nf) = -1
 
             end if
         end do 
@@ -284,8 +287,8 @@ subroutine hc_faces
     ! Now we have to number the ghosts.
 
     do nf = 1, nfaces
-        if (face(nf,4) < 0) then
-            face(nf,4) = bc
+        if (face(4,nf) < 0) then
+            face(4,nf) = bc
             bc = bc - 1
         end if
     end do
@@ -300,7 +303,7 @@ subroutine hc_faces
     do nf = 1, nfaces
         do ig = 1, nghos
 
-            is_bc = face(nf,4)
+            is_bc = face(4,nf)
 
 
             ! If the face I'm in is a boundary face, I have to link the ighost
@@ -308,18 +311,18 @@ subroutine hc_faces
 
             if (is_bc < 0) then
 
-                pf1 = face(nf,1)
-                pf2 = face(nf,2)
+                pf1 = face(1,nf)
+                pf2 = face(2,nf)
 
-                pg1 = ghost(ig,2)
-                pg2 = ghost(ig,3)
+                pg1 = ghost(2,ig)
+                pg2 = ghost(3,ig)
 
                 if (pf1 == pg1 .and. pf2 == pg2 .or. pf1 == pg2 .and. pf2 == pg1) then
 
-                    ighost(-ig,1) = ghost(ig,1)  ! Boundary type.
-                    ighost(-ig,2) = nf           ! Face index.
-                    ighost(-ig,3) = face(nf,1)   ! Face point 1.
-                    ighost(-ig,4) = face(nf,2)   ! Face point 2.
+                    ighost(1,-ig) = ghost(1,ig)  ! Boundary type.
+                    ighost(2,-ig) = nf           ! Face index.
+                    ighost(3,-ig) = face(1,nf)   ! Face point 1.
+                    ighost(4,-ig) = face(2,nf)   ! Face point 2.
 
                 end if
 
@@ -337,11 +340,11 @@ subroutine hc_faces
     open(5,file="ighost.dat")
 
     do idx = 1,nfaces
-        write(4,'(5I8)') idx,face(idx,1),face(idx,2),face(idx,3),face(idx,4)
+        write(4,'(5I8)') idx,face(1,idx),face(2,idx),face(3,idx),face(4,idx)
     end do
 
     do ig = 1, nghos
-        write(5,'(5I8)') ig,ighost(-ig,1),ighost(-ig,2),ighost(-ig,3),ighost(-ig,4)
+        write(5,'(5I8)') ig,ighost(1,-ig),ighost(2,-ig),ighost(3,-ig),ighost(4,-ig)
     end do
 
 
@@ -383,8 +386,8 @@ subroutine realloc_int2D_faces(size_1a,size_1b,size_2a,size_2b)
 
     new = 0
 
-    do i = 1, size_1a
-        do j = 1, size_2a
+    do i = 1,size_1a 
+        do j = 1,size_2a
             new(i,j) = face(i,j)
         end do
     end do
@@ -394,7 +397,7 @@ subroutine realloc_int2D_faces(size_1a,size_1b,size_2a,size_2b)
     allocate(face(size_1b,size_2b))
 
     do i = 1, size_1a
-        do j = 1, size_2a
+        do j = 1,size_2a
             face(i,j) = new(i,j)
         end do
     end do
@@ -447,7 +450,7 @@ subroutine hash_size(max_hash_size)
 
     ! Get the size of the hash main vector.
 
-    do ivol = 1, nelem
+    do ivol = 1, ncells
 
 
         ! First face combination.
@@ -516,12 +519,3 @@ subroutine hash_size(max_hash_size)
     end do
 
 end subroutine hash_size
-
-subroutine restart
-
-    use shared
-    implicit none
-
-
-end subroutine restart
-

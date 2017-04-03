@@ -2,11 +2,7 @@
 ! Author: Leonardo Motta
 ! Contributions: Edson, Andre.
 
-! To do: [ ] -  Put the vector allocations in indat.
-        ![ ] -  Perform the area calculation.
-        ![ ] -  Find the face inverse.
-        ![ ] -  do a restar procedure.
-        ![ ] -  Put some properties in init 
+! TO DO: Get a better way to tecplot all.
 
 program nlb2d
 
@@ -35,6 +31,7 @@ program nlb2d
     write(*,'(A)') ""
     write(*,'(A)') "-----------------------------------------------------------"
     write(*,'(A)') " + PERFORMING PRE-PROCESSING."
+    write(*,'(A)') ""
     
     call system_clock(c1)
 
@@ -66,10 +63,13 @@ program nlb2d
     write(*,'(A)') ""
     write(*,'(A)') "-----------------------------------------------------------"
     write(*,'(A)') " + BUILDING DERIVED DATA FOR FVM METHOD."
+    write(*,'(A)') ""
 
     call system_clock(c1)
 
-    ! Code here man !
+    call init
+    call calc_cell_area
+    call initial_condition
 
     call system_clock(c2)
 
@@ -92,6 +92,7 @@ program nlb2d
     write(*,'(A)') ""
     write(*,'(A)') "-----------------------------------------------------------"
     write(*,'(A)') " + OUTPUTING SOLUTION TO TECPLOT."
+    write(*,'(A)') ""
 
     call system_clock(c1)
 
@@ -106,4 +107,3 @@ program nlb2d
     write(*,'(A)') "-----------------------------------------------------------"
 
 end program nlb2d
-
