@@ -33,3 +33,6 @@
 
 # Output files.
 debug*
+face.dat
+ighost.dat
+output.dat

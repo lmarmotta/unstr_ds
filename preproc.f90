@@ -192,7 +192,6 @@ subroutine hc_faces
 
         end if
 
-
         ! Loop trough faces of this element and hash then man !
 
         do i = 1, inf
@@ -245,16 +244,12 @@ subroutine hc_faces
 
                 ! Loop through the hash table to find empty spots.
 
-                ! do while (ihash(idx) /= 0 .and. infi == 0)
                 do while (ihash(idx) /= 0 .and. infi == 0)
-
                     if (idx == max_hash_size + hs) then
                         idx = 1
                         infi = 1
                     end if
-
                     idx = idx + 1
-
                 end do 
 
                 ! Increase the number of faces counter.
@@ -279,9 +274,7 @@ subroutine hc_faces
                 face(nf,4) = -1
 
             end if
-
         end do 
-
     end do
 
     nfaces = nf
