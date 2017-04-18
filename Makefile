@@ -45,7 +45,7 @@ timestep.o: ./timestep.f90 shared.o
 SRC = ./functions.f90 ./shared.f90 ./derived.f90 ./nlb2d.f90 ./tecplot.f90 ./timestep.f90 ./preproc.f90
 OBJ = functions.o shared.o derived.o nlb2d.o tecplot.o timestep.o preproc.o
 clean: neat
-	-rm -f .cppdefs $(OBJ) *.mod a.out *__genmod.f90 *__genmod.mod ighost.dat face.dat
+	-rm -f .cppdefs $(OBJ) *.mod a.out *__genmod.f90 *__genmod.mod ighost.dat face.dat output.dat
 neat:
 	-rm -f $(TMPFILES)
 TAGS: $(SRC)
