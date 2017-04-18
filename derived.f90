@@ -120,6 +120,50 @@ subroutine calc_cell_area
 
 end subroutine calc_cell_area
 
+subroutine calc_normals
+
+    ! This subroutine calculates the normal vector to the face following the
+    ! procedure:
+    ! Given two points of the edge (face) p1 and p1, availiable in the face
+    ! datastructure. We can calculate dx as p2_x - p1_x and dy as p2_y - p1_y.
+    ! By definition the normals are:
+    ! (-dy,dx) and (dy,-dx).
+
+    use shared
+    implicit none
+
+    integer(kind=4) :: ifc
+    real(kind=8) :: x1,x2,y1,y2,dx,dy
+
+    write(*,'(A)') " + Calculating normals."
+
+    ! Allocate the normals for the worst case scenario (QUAD_4 mesh).
+    allocate(sx(nfaces))
+    allocate(sy(nfaces))
+
+    ! Initialize vector.
+    sx = 0.0d0
+    sy = 0.0d0
+
+
+    do ifc = 1, nfaces
+
+        x1 = coord(1,face(1,ifc))
+        x2 = coord(1,face(2,ifc))
+
+        y1 = coord(1,face(1,ifc))
+        y2 = coord(1,face(2,ifc))
+
+        dx = x2 - x1
+        dy = y2 - y1
+
+        sx(ifc) = -dy
+        sy(ifc) =  dx
+
+    end do
+
+end subroutine calc_normals
+
 subroutine initial_condition
 
     use shared

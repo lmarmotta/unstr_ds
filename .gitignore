@@ -36,3 +36,5 @@ debug*
 face.dat
 ighost.dat
 output.dat
+*__genmod.f90
+*__genmod.mod

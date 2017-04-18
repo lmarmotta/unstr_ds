@@ -8,6 +8,7 @@ module shared
     !
     real(kind=8) :: rho,rhou,rhov,e
     integer(kind=4) :: hash_typ, hs, restart,formulation
+    integer(kind=4) :: n_iter
 
     !
     ! BASIC DATASTRUCTURES
@@ -25,6 +26,9 @@ module shared
     ! nghos: Number of boundary faces.
     integer(kind=4) :: nghos
 
+    ! nfaces: Number of faces in the mesh.
+    integer(kind=4) :: nfaces
+
     ! Connectivit matrix inpoel(1:nnode, 1:ncells).
     ! inpoel(1,cell): cell node 1.
     ! inpoel(2,cell): cell node 2.
@@ -41,6 +45,10 @@ module shared
 
     ! Area of each element.
     real(kind=8), allocatable, dimension(:) :: f_area
+
+    ! Normals to each edge.
+    real(kind=8), allocatable,dimension(:) :: sx
+    real(kind=8), allocatable,dimension(:) :: sy
 
     !
     ! FACE-BASED DATA STRUCTURES CREATION

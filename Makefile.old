@@ -1,0 +1,81 @@
+# Makefile created by mkmf $Id: mkmf,v 1.1.1.1 2008-08-28 01:48:18 carbrevi Exp $ 
+
+
+# choose fortran compiler
+#FC = gfortran
+#LD = gfortran
+
+FC = ifort
+LD = ifort
+
+
+# Fortran compiler flags
+
+#intel fortran compiler debug mode: 
+FFLAGS  =  -pg -O0 -fpe:0 -implicitnone -warn declarations -warn unused -warn ignore_loc -warn truncated_source -traceback -check all -check bounds -check uninit -ftrapuv -gen-interface -warn interfaces -debug all -fp-speculation=off -init=zero -init=arrays -init=snan
+LDFLAGS = -mkl
+#intel fortran compiler optimized mode: 
+#FFLAGS  =  -O3 -fpe:0 -xHost -static -fast -assume buffered_io -fp-model precise 
+#LDFLAGS = -mkl
+
+#gfortran compiler debug mode: 
+#FFLAGS  = -Wall -g -fbounds-check
+#LDFLAGS = 
+#gfortran compiler optimized mode: 
+#FFLAGS  = -O2 -s -fomit-frame-pointer -fexpensive-optimizations -ffast-math
+#LDFLAGS = 
+
+
+.DEFAULT:
+	-touch $@
+all: a.out
+area_tri3__genmod.o: ./area_tri3__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./area_tri3__genmod.f90
+basic_ds__genmod.o: ./basic_ds__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./basic_ds__genmod.f90
+calc_cell_area__genmod.o: ./calc_cell_area__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./calc_cell_area__genmod.f90
+calc_normals__genmod.o: ./calc_normals__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./calc_normals__genmod.f90
+derived.o: ./derived.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./derived.f90
+functions.o: ./functions.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./functions.f90
+hash_size__genmod.o: ./hash_size__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./hash_size__genmod.f90
+hc_faces__genmod.o: ./hc_faces__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./hc_faces__genmod.f90
+indat__genmod.o: ./indat__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./indat__genmod.f90
+init__genmod.o: ./init__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./init__genmod.f90
+initial_condition__genmod.o: ./initial_condition__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./initial_condition__genmod.f90
+nlb2d.o: ./nlb2d.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./nlb2d.f90
+preproc.o: ./preproc.f90 shared.o functions.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./preproc.f90
+realloc_int1d_ihash__genmod.o: ./realloc_int1d_ihash__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./realloc_int1d_ihash__genmod.f90
+realloc_int2d_faces__genmod.o: ./realloc_int2d_faces__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./realloc_int2d_faces__genmod.f90
+shared.o: ./shared.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./shared.f90
+tecplot.o: ./tecplot.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./tecplot.f90
+tecplot__genmod.o: ./tecplot__genmod.f90
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./tecplot__genmod.f90
+timestep.o: ./timestep.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./timestep.f90
+SRC = ./timestep.f90 ./nlb2d.f90 ./shared.f90 ./tecplot.f90 ./initial_condition__genmod.f90 ./hash_size__genmod.f90 ./area_tri3__genmod.f90 ./init__genmod.f90 ./calc_cell_area__genmod.f90 ./realloc_int2d_faces__genmod.f90 ./realloc_int1d_ihash__genmod.f90 ./functions.f90 ./tecplot__genmod.f90 ./indat__genmod.f90 ./basic_ds__genmod.f90 ./calc_normals__genmod.f90 ./derived.f90 ./preproc.f90 ./hc_faces__genmod.f90
+OBJ = timestep.o nlb2d.o shared.o tecplot.o initial_condition__genmod.o hash_size__genmod.o area_tri3__genmod.o init__genmod.o calc_cell_area__genmod.o realloc_int2d_faces__genmod.o realloc_int1d_ihash__genmod.o functions.o tecplot__genmod.o indat__genmod.o basic_ds__genmod.o calc_normals__genmod.o derived.o preproc.o hc_faces__genmod.o
+clean: neat
+	-rm -f .cppdefs $(OBJ) *.mod a.out
+neat:
+	-rm -f $(TMPFILES)
+TAGS: $(SRC)
+	etags $(SRC)
+tags: $(SRC)
+	ctags $(SRC)
+a.out: $(OBJ) 
+	$(LD) $(OBJ) -o a.out  $(LDFLAGS)

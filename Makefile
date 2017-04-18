@@ -10,12 +10,11 @@ LD = ifort
 
 
 # Fortran compiler flags
-
 #intel fortran compiler debug mode: 
-FFLAGS  = -g -O0 -fpe:0 -warn declarations -warn unused -warn ignore_loc -warn truncated_source -traceback -check all -implicitnone -openmp
+FFLAGS  =  -pg -O0 -fpe:0 -implicitnone -warn declarations -warn unused -warn ignore_loc -warn truncated_source -traceback -check all -check bounds -check uninit -ftrapuv -gen-interface -warn interfaces -debug all -fp-speculation=off -init=zero -init=arrays -init=snan
 LDFLAGS = -mkl
 #intel fortran compiler optimized mode: 
-#FFLAGS  = -O3 -fpe:0 -implicitnone -fast -ipo -xHost -parallel -openmp
+#FFLAGS  =  -O3 -fpe:0 -xHost -static -fast -assume buffered_io -fp-model precise 
 #LDFLAGS = -mkl
 
 #gfortran compiler debug mode: 
@@ -41,10 +40,12 @@ shared.o: ./shared.f90
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./shared.f90
 tecplot.o: ./tecplot.f90 shared.o
 	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./tecplot.f90
-SRC = ./nlb2d.f90 ./functions.f90 ./shared.f90 ./derived.f90 ./preproc.f90 ./tecplot.f90
-OBJ = nlb2d.o functions.o shared.o derived.o preproc.o tecplot.o
+timestep.o: ./timestep.f90 shared.o
+	$(FC) $(FFLAGS) $(OTHERFLAGS) -c	./timestep.f90
+SRC = ./functions.f90 ./shared.f90 ./derived.f90 ./nlb2d.f90 ./tecplot.f90 ./timestep.f90 ./preproc.f90
+OBJ = functions.o shared.o derived.o nlb2d.o tecplot.o timestep.o preproc.o
 clean: neat
-	-rm -f .cppdefs $(OBJ) *.mod a.out face.dat ighost.dat output.dat
+	-rm -f .cppdefs $(OBJ) *.mod a.out *__genmod.f90 *__genmod.mod ighost.dat face.dat
 neat:
 	-rm -f $(TMPFILES)
 TAGS: $(SRC)

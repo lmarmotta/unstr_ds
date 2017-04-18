@@ -116,7 +116,7 @@ subroutine hc_faces
     use functions
     implicit none
 
-    integer(kind=4) :: ivol, nfaces, idx, nf, bc, n_colision,inf,i,infi
+    integer(kind=4) :: ivol, idx, nf, bc, n_colision,inf,i,infi
     integer(kind=4) :: ig, is_bc, pf1, pf2, pg1, pg2, max_hash_size
 
     ! Inner element face.
